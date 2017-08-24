@@ -138,6 +138,7 @@ void usage() {
 	fprintf(stderr, "\t--raw-frames\t\t\tOutput AVLC payload as raw bytes\n");
 	fprintf(stderr, "\t--msg-filter <filter_spec>\tMessage types to display (default: all) (\"--msg-filter help\" for details)\n");
 	fprintf(stderr, "\t--output-acars-pp <host:port>\tSend ACARS messages to Planeplotter over UDP/IP\n");
+	fprintf(stderr, "\t--output-acars-raw <host:port>\tSend ACARS messages to native consumer over UDP/IP\n");
 #if USE_STATSD
 	fprintf(stderr, "\t--statsd <host>:<port>\tSend statistics to Etsy StatsD server <host>:<port> (default: disabled)\n");
 #endif
@@ -307,6 +308,8 @@ int main(int argc, char **argv) {
 		{ "sample-format",	required_argument,	NULL,	__OPT_SAMPLE_FORMAT },
 		{ "msg-filter",		required_argument,	NULL,	__OPT_MSG_FILTER },
 		{ "output-acars-pp",	required_argument,	NULL,	__OPT_OUTPUT_ACARS_PP },
+		{ "output-acars-raw",	required_argument,	NULL,	__OPT_OUTPUT_ACARS_RAW },
+		{ "station-id",	required_argument,	NULL,	__OPT_STATION_ID },
 #if WITH_MIRISDR
 		{ "mirisdr",		required_argument,	NULL,	__OPT_MIRISDR },
 		{ "hw-type",		required_argument,	NULL,	__OPT_HW_TYPE },
@@ -435,6 +438,12 @@ int main(int argc, char **argv) {
 		case __OPT_OUTPUT_ACARS_PP:
 			pp_addr = strdup(optarg);
 			break;
+		case __OPT_OUTPUT_ACARS_RAW:
+			raw_addr = strdup(optarg);
+			break;
+		case __OPT_STATION_ID:
+			station_id = strdup(optarg);
+			break;
 		case __OPT_MSG_FILTER:
 			msg_filter = parse_msg_filterspec(optarg);
 			break;
@@ -513,6 +522,10 @@ int main(int argc, char **argv) {
 	}
 	if(pp_addr && init_pp(pp_addr) < 0) {
 		fprintf(stderr, "Failed to initialize output socket to Planeplotter - aborting\n");
+		_exit(4);
+	}
+	if(raw_addr && init_raw(raw_addr) < 0) {
+		fprintf(stderr, "Failed to initialize output socket to native consumer - aborting\n");
 		_exit(4);
 	}
 	setup_signals();

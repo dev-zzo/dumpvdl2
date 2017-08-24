@@ -27,10 +27,9 @@ typedef struct {
 	uint8_t label[3];
 	uint8_t bid;
 	uint8_t bs;
-	uint8_t no[5];
-	uint8_t fid[7];
+	uint8_t be;
 	char txt[ACARSMSG_BUFSIZE];
 } acars_msg_t;
 
 acars_msg_t *parse_acars(uint8_t *buf, uint32_t len, uint32_t *msg_type);
-void output_acars(const acars_msg_t *msg);
+void output_acars(const acars_msg_t *msg, uint32_t freq);

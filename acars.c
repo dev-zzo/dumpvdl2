@@ -86,31 +86,15 @@ acars_msg_t *parse_acars(uint8_t *buf, uint32_t len, uint32_t *msg_type) {
 
 	/* txt start  */
 	msg->bs = buf[k++];
+	msg->be = buf[len - 1];
 
-	msg->no[0] = '\0';
-	msg->fid[0] = '\0';
 	msg->txt[0] = '\0';
 
 	if(k >= len) {		// empty txt
-		msg->txt[0] = '\0';
 		return msg;
 	}
 
 	if (msg->bs != 0x03) {
-		if (msg->mode <= 'Z' && msg->bid <= '9') {
-			/* message no */
-			for (i = 0; i < 4 && k < len; i++, k++) {
-				msg->no[i] = buf[k];
-			}
-			msg->no[i] = '\0';
-
-			/* Flight id */
-			for (i = 0; i < 6 && k < len; i++, k++) {
-				msg->fid[i] = buf[k];
-			}
-			msg->fid[i] = '\0';
-		}
-
 		/* Message txt */
 		len -= k;
 		if(len > ACARSMSG_BUFSIZE) {
@@ -144,7 +128,50 @@ void output_acars_pp(const acars_msg_t *msg) {
 		debug_print("write(pp_sockfd) error: %s", strerror(errno));
 }
 
-void output_acars(const acars_msg_t *msg) {
+#define STATION_ID_LENGTH 8
+
+typedef struct _acars_udp_message_header_t acars_udp_message_header_t;
+struct _acars_udp_message_header_t {
+    char station_id[STATION_ID_LENGTH];
+    unsigned int fc;
+    unsigned int timestamp;
+};
+
+typedef struct _acars_udp_message_t acars_udp_message_t;
+struct _acars_udp_message_t {
+    acars_udp_message_header_t header;
+    char payload[ACARSMSG_BUFSIZE + 16];
+};
+
+void output_acars_raw(const acars_msg_t *msg, uint32_t freq) {
+	acars_udp_message_t pkt;
+
+	memset(&pkt, 0, sizeof(pkt));
+
+	strncpy(&msg.header.station_id[0], station_id, STATION_ID_LENGTH);
+	pkt.header.timestamp = htonl(time(NULL));
+	pkt.header.fc = htonl(freq);
+
+	pkt.payload[0] = msg->mode;
+	memcpy(&pkt.payload[1], msg->reg, 7);
+	pkt.payload[8] = msg->ack == '!' ? 0x15 : msg->ack;
+	pkt.payload[9] = msg->label[0];
+	pkt.payload[10] = msg->label[1];
+	if (msg->label[1] == 'd')
+		pkt.payload[10] = 0x7f;
+	pkt.payload[11] = msg->bid;
+	pkt.payload[12] = msg->bs;
+	if (msg->bs == 0x02) {
+		size_t txt_len = strlen(msg->txt);
+		strcpy(&pkt.payload[13], msg->txt);
+		pkt.payload[13 + txt_len] = msg->be;
+	}
+
+	if(write(pp_sockfd, pkt, strlen(pkt)) < 0)
+		debug_print("write(pp_sockfd) error: %s", strerror(errno));
+}
+
+void output_acars(const acars_msg_t *msg, uint32_t freq) {
 	fprintf(outf, "ACARS:\n");
 	if(msg->mode < 0x5d)
 		fprintf(outf, "Reg: %s Flight: %s\n", msg->reg, msg->fid);
@@ -153,4 +180,6 @@ void output_acars(const acars_msg_t *msg) {
 	fprintf(outf, "Message:\n%s\n", msg->txt);
 	if(pp_sockfd > 0)
 		output_acars_pp(msg);
+	if(raw_sockfd > 0)
+		output_acars_raw(msg);
 }

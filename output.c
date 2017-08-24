@@ -29,7 +29,9 @@
 #include "dumpvdl2.h"
 
 FILE *outf;
+char *station_id = "";
 int pp_sockfd = 0;
+int raw_sockfd = 0;
 uint8_t hourly = 0, daily = 0, utc = 0, output_raw_frames = 0;
 static char *filename_prefix = NULL;
 static char *extension = NULL;
@@ -94,14 +96,18 @@ int init_output_file(char *file) {
 	return 0;
 }
 
-int init_pp(char *pp_addr) {
-	if(pp_addr == NULL) return -1;
+static int init_socket(char *addr_str, const char *default_port) {
+	if(addr_str == NULL) return -1;
 
-	char *addr, *port;
-	if((addr = strtok(pp_addr, ":")) == NULL)
-		return -1;
-	if((port = strtok(NULL, ":")) == NULL)
-		return -1;
+	const char *addr, *port;
+	int sockfd;
+	addr = strtok(addr_str, ":");
+	if(addr == NULL) {
+		addr = addr_str;
+		port = default_port;
+	} else {
+		port = strtok(NULL, ":");
+	}
 
 	struct addrinfo hints, *result, *rptr;
 	memset(&hints, 0, sizeof(struct addrinfo));
@@ -111,20 +117,37 @@ int init_pp(char *pp_addr) {
 	hints.ai_protocol = 0;
 	int ret = getaddrinfo(addr, port, &hints, &result);
 	if(ret != 0) {
-		fprintf(stderr, "Could not resolve %s: %s\n", pp_addr, gai_strerror(ret));
+		fprintf(stderr, "Could not resolve %s: %s\n", addr_str, gai_strerror(ret));
 		return -1;
 	}
 	for (rptr = result; rptr != NULL; rptr = rptr->ai_next) {
-		pp_sockfd = socket(rptr->ai_family, rptr->ai_socktype, rptr->ai_protocol);
-		if (pp_sockfd == -1) continue;
-		if (connect(pp_sockfd, rptr->ai_addr, rptr->ai_addrlen) != -1) break;
-		close(pp_sockfd);
+		sockfd = socket(rptr->ai_family, rptr->ai_socktype, rptr->ai_protocol);
+		if (sockfd == -1) continue;
+		if (connect(sockfd, rptr->ai_addr, rptr->ai_addrlen) != -1) break;
+		close(sockfd);
 	}
 	if (rptr == NULL) {
-		fprintf(stderr, "Could not connect to Planeplotter: all addresses failed\n");
-		return -1;
+		fprintf(stderr, "Could not connect the socket: all addresses failed\n");
 	}
 	freeaddrinfo(result);
+	return sockfd;
+}
+
+int init_pp(char *pp_addr) {
+	pp_sockfd = init_socket(pp_addr, "5555");
+	if (pp_sockfd < 0) {
+		fprintf(stderr, "Could not connect to Planeplotter\n");
+		return -1;
+	}
+	return 0;
+}
+
+int init_raw(char *raw_addr) {
+	raw_sockfd = init_socket(raw_addr, "13963");
+	if (raw_sockfd < 0) {
+		fprintf(stderr, "Could not connect to native consumer\n");
+		return -1;
+	}
 	return 0;
 }
 

@@ -250,7 +250,7 @@ void output_avlc(vdl2_channel_t *v, const avlc_frame_t *f, uint8_t *raw_buf, uin
 		switch(f->proto) {
 		case PROTO_ACARS:
 			if(f->data_valid)
-				output_acars((acars_msg_t *)f->data);
+				output_acars((acars_msg_t *)f->data, v->freq / 1000);
 			else {
 				fprintf(outf, "-- Unparseable ACARS payload\n");
 				output_raw((uint8_t *)f->data, f->datalen);
