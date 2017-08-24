@@ -100,7 +100,7 @@ static int init_socket(char *addr_str, const char *default_port) {
 	if(addr_str == NULL) return -1;
 
 	const char *addr, *port;
-	int sockfd;
+	int sockfd = -1;
 	addr = strtok(addr_str, ":");
 	if(addr == NULL) {
 		addr = addr_str;
