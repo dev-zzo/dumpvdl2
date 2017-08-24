@@ -308,7 +308,7 @@ int main(int argc, char **argv) {
 		{ "sample-format",	required_argument,	NULL,	__OPT_SAMPLE_FORMAT },
 		{ "msg-filter",		required_argument,	NULL,	__OPT_MSG_FILTER },
 		{ "output-acars-pp",	required_argument,	NULL,	__OPT_OUTPUT_ACARS_PP },
-		{ "output-acars-raw",	required_argument,	NULL,	__OPT_OUTPUT_ACARS_RAW },
+		{ "output-acars-nc",	required_argument,	NULL,	__OPT_OUTPUT_ACARS_NC },
 		{ "station-id",	required_argument,	NULL,	__OPT_STATION_ID },
 #if WITH_MIRISDR
 		{ "mirisdr",		required_argument,	NULL,	__OPT_MIRISDR },
@@ -340,7 +340,7 @@ int main(int argc, char **argv) {
 	char *statsd_addr = NULL;
 	int statsd_enabled = 0;
 #endif
-	char *infile = NULL, *outfile = NULL, *pp_addr = NULL, *raw_addr = NULL;
+	char *infile = NULL, *outfile = NULL, *pp_addr = NULL, *nc_addr = NULL;
 
 	fprintf(stderr, "dumpVDL2 %s\n", DUMPVDL2_VERSION);
 	while((opt = getopt_long(argc, argv, "", long_opts, NULL)) != -1) {
@@ -438,8 +438,8 @@ int main(int argc, char **argv) {
 		case __OPT_OUTPUT_ACARS_PP:
 			pp_addr = strdup(optarg);
 			break;
-		case __OPT_OUTPUT_ACARS_RAW:
-			raw_addr = strdup(optarg);
+		case __OPT_OUTPUT_ACARS_NC:
+			nc_addr = strdup(optarg);
 			break;
 		case __OPT_STATION_ID:
 			station_id = strdup(optarg);
@@ -524,7 +524,7 @@ int main(int argc, char **argv) {
 		fprintf(stderr, "Failed to initialize output socket to Planeplotter - aborting\n");
 		_exit(4);
 	}
-	if(raw_addr && init_raw(raw_addr) < 0) {
+	if(nc_addr && init_nc(nc_addr) < 0) {
 		fprintf(stderr, "Failed to initialize output socket to native consumer - aborting\n");
 		_exit(4);
 	}

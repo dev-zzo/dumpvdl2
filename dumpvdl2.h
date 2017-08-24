@@ -82,7 +82,7 @@
 #define __OPT_OUTPUT_ACARS_PP		16
 #define __OPT_UTC			17
 #define __OPT_RAW_FRAMES		18
-#define __OPT_OUTPUT_ACARS_RAW		19
+#define __OPT_OUTPUT_ACARS_NC		19
 #define __OPT_STATION_ID		20
 #ifdef WITH_SDRPLAY
 #define __OPT_SDRPLAY			80
@@ -236,11 +236,11 @@ int rs_verify(uint8_t *data, int fec_octets);
 extern FILE *outf;
 extern uint8_t hourly, daily, utc, output_raw_frames;
 extern int pp_sockfd;
-extern int raw_sockfd;
+extern int nc_sockfd;
 extern char *station_id;
 int init_output_file(char *file);
 int init_pp(char *pp_addr);
-int init_raw(char *raw_addr);
+int init_nc(char *raw_addr);
 int rotate_outfile();
 void output_raw(uint8_t *buf, uint32_t len);
 

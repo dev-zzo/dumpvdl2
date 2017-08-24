@@ -31,7 +31,7 @@
 FILE *outf;
 char *station_id = "";
 int pp_sockfd = 0;
-int raw_sockfd = 0;
+int nc_sockfd = 0;
 uint8_t hourly = 0, daily = 0, utc = 0, output_raw_frames = 0;
 static char *filename_prefix = NULL;
 static char *extension = NULL;
@@ -142,9 +142,9 @@ int init_pp(char *pp_addr) {
 	return 0;
 }
 
-int init_raw(char *raw_addr) {
-	raw_sockfd = init_socket(raw_addr, "13963");
-	if (raw_sockfd < 0) {
+int init_nc(char *nc_addr) {
+	nc_sockfd = init_socket(nc_addr, "13963");
+	if (nc_sockfd < 0) {
 		fprintf(stderr, "Could not connect to native consumer\n");
 		return -1;
 	}

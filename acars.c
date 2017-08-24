@@ -122,7 +122,7 @@ void output_acars_pp(const acars_msg_t *msg) {
 			*ptr = ' ';
 
 	sprintf(pkt, "AC%1c %7s %1c %2s %1c %4s %6s %s",
-		msg->mode, msg->reg, msg->ack, msg->label, msg->bid, msg->no, msg->fid, txt);
+		msg->mode, msg->reg, msg->ack, msg->label, msg->bid, "", "", txt);
 
 	if(write(pp_sockfd, pkt, strlen(pkt)) < 0)
 		debug_print("write(pp_sockfd) error: %s", strerror(errno));
@@ -143,12 +143,13 @@ struct _acars_udp_message_t {
     char payload[ACARSMSG_BUFSIZE + 16];
 };
 
-void output_acars_raw(const acars_msg_t *msg, uint32_t freq) {
+void output_acars_nc(const acars_msg_t *msg, uint32_t freq) {
 	acars_udp_message_t pkt;
+	size_t txt_len = 0;
 
 	memset(&pkt, 0, sizeof(pkt));
 
-	strncpy(&msg.header.station_id[0], station_id, STATION_ID_LENGTH);
+	strncpy(&pkt.header.station_id[0], station_id, STATION_ID_LENGTH);
 	pkt.header.timestamp = htonl(time(NULL));
 	pkt.header.fc = htonl(freq);
 
@@ -162,24 +163,24 @@ void output_acars_raw(const acars_msg_t *msg, uint32_t freq) {
 	pkt.payload[11] = msg->bid;
 	pkt.payload[12] = msg->bs;
 	if (msg->bs == 0x02) {
-		size_t txt_len = strlen(msg->txt);
+		txt_len = strlen(msg->txt);
 		strcpy(&pkt.payload[13], msg->txt);
 		pkt.payload[13 + txt_len] = msg->be;
 	}
 
-	if(write(pp_sockfd, pkt, strlen(pkt)) < 0)
+	if(write(pp_sockfd, &pkt, sizeof(pkt.header) + txt_len + 1) < 0)
 		debug_print("write(pp_sockfd) error: %s", strerror(errno));
 }
 
 void output_acars(const acars_msg_t *msg, uint32_t freq) {
 	fprintf(outf, "ACARS:\n");
 	if(msg->mode < 0x5d)
-		fprintf(outf, "Reg: %s Flight: %s\n", msg->reg, msg->fid);
-	fprintf(outf, "Mode: %1c Label: %s Blk id: %c Ack: %c Msg no.: %s\n",
-		msg->mode, msg->label, msg->bid, msg->ack, msg->no);
+		fprintf(outf, "Reg: %s\n", msg->reg);
+	fprintf(outf, "Mode: %1c Label: %s Blk id: %c Ack: %c\n",
+		msg->mode, msg->label, msg->bid, msg->ack);
 	fprintf(outf, "Message:\n%s\n", msg->txt);
 	if(pp_sockfd > 0)
 		output_acars_pp(msg);
-	if(raw_sockfd > 0)
-		output_acars_raw(msg);
+	if(nc_sockfd > 0)
+		output_acars_nc(msg, freq);
 }
