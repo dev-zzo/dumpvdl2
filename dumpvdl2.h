@@ -83,6 +83,7 @@
 #define __OPT_UTC			17
 #define __OPT_RAW_FRAMES		18
 #define __OPT_OUTPUT_ACARS_RAW		19
+#define __OPT_STATION_ID		20
 #ifdef WITH_SDRPLAY
 #define __OPT_SDRPLAY			80
 #define __OPT_ANTENNA			81

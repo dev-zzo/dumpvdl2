@@ -340,7 +340,7 @@ int main(int argc, char **argv) {
 	char *statsd_addr = NULL;
 	int statsd_enabled = 0;
 #endif
-	char *infile = NULL, *outfile = NULL, *pp_addr = NULL;
+	char *infile = NULL, *outfile = NULL, *pp_addr = NULL, *raw_addr = NULL;
 
 	fprintf(stderr, "dumpVDL2 %s\n", DUMPVDL2_VERSION);
 	while((opt = getopt_long(argc, argv, "", long_opts, NULL)) != -1) {
