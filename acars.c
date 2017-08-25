@@ -86,8 +86,8 @@ acars_msg_t *parse_acars(uint8_t *buf, uint32_t len, uint32_t *msg_type) {
 		msg->bid = ' ';
 
 	/* txt start  */
-	msg->bs = buf[k++];
-	msg->be = buf[len - 1];
+	msg->bs = buf[k++] & 0x7f;
+	msg->be = buf[len] & 0x7f;
 
 	msg->txt[0] = '\0';
 
@@ -147,6 +147,7 @@ struct _acars_udp_message_t {
 void output_acars_nc(const acars_msg_t *msg, uint32_t freq) {
 	acars_udp_message_t pkt;
 	size_t txt_len = 0;
+	size_t pkt_len;
 
 	memset(&pkt, 0, sizeof(pkt));
 
@@ -167,9 +168,12 @@ void output_acars_nc(const acars_msg_t *msg, uint32_t freq) {
 		txt_len = strlen(msg->txt);
 		strcpy(&pkt.payload[13], msg->txt);
 		pkt.payload[13 + txt_len] = msg->be;
+		pkt_len = sizeof(pkt.header) + 13 + txt_len + 1;
+	} else {
+		pkt_len = sizeof(pkt.header) + 13;
 	}
 
-	if(write(pp_sockfd, &pkt, sizeof(pkt.header) + txt_len + 1) < 0)
+	if(write(nc_sockfd, &pkt, pkt_len) < 0)
 		debug_print("write(pp_sockfd) error: %s", strerror(errno));
 }
 
